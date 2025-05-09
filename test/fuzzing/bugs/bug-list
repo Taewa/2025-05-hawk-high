@@ -1,0 +1,4 @@
+1. enroll(): student can just put 1 usdc to enroll even if schoolFees is set to 5k usdc.
+2. removeTeacher(): if teacher is removed all, who can review?
+3. startSession(): it doesn't check whether there is student, teacher, and busary. Means the session can with no one
+4. giveReview(): studentScore can cause arithmatic underflow : bug-1.sol

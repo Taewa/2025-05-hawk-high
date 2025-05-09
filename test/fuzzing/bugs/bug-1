@@ -1,0 +1,117 @@
+√ Title
+[H-01] Arithmetic underflow can happen in giveReview function
+
+√ Description
+By default, each student has 100 score.
+If a student gets a bad review, the score will be decreased by 10.
+And student can get maximum 4 reviews per session (1 month).
+But there is no check for the number of reviewCount in LevelOne contract.
+Therefore, studentScore can be negative which causes arithmetic underflow.
+Check LevelOne.sol#L288
+
+√ Impact
+A session is 4 weeks and student can get maximum 4 reviews per session.
+So the worst case if student gets 4 bad reviews, the score gets -40 which is 60 score left (because default score is 100).
+But this bug can make studentScore lower than 60 and even negative.
+
+√ Recommendation
+Implement increment of reviewCount at the end of giveReview function.
+
+√ PoC
+test/fuzzing/bugs/poc/bug-1.sol
+
+√ Steps to reproduce (Debug logs)
+Call sequence:
+    Fuzz.handler_enroll() Time delay: 15 seconds Block delay: 2176
+    Fuzz.handler_addTeacher() Time delay: 48 seconds Block delay: 5089
+    Fuzz.handler_giveReview() Time delay: 218776 seconds Block delay: 45261
+    Fuzz.handler_addTeacher() Time delay: 82670 seconds Block delay: 12338
+    Fuzz.handler_enroll() Time delay: 48026 seconds Block delay: 4936
+    Fuzz.handler_addTeacher() Time delay: 594118 seconds Block delay: 17
+    Fuzz.handler_giveReview() Time delay: 322361 seconds Block delay: 1000
+    Fuzz.handler_enroll() Time delay: 122140 seconds Block delay: 4960
+    Fuzz.handler_enroll() Time delay: 32 seconds Block delay: 8447
+    Fuzz.handler_giveReview() Time delay: 531977 seconds Block delay: 51723
+    Fuzz.handler_enroll() Time delay: 322304 seconds Block delay: 5007
+    Fuzz.handler_addTeacher() Time delay: 305997 seconds Block delay: 11
+    Fuzz.handler_enroll() Time delay: 305572 seconds Block delay: 5007
+    Fuzz.handler_startSession() Time delay: 7 seconds Block delay: 22909
+    Fuzz.handler_addTeacher() Time delay: 303345 seconds Block delay: 33200
+    Fuzz.handler_giveReview() Time delay: 82671 seconds Block delay: 2497
+    Fuzz.handler_addTeacher() Time delay: 322334 seconds Block delay: 42595
+    Fuzz.handler_addTeacher() Time delay: 440097 seconds Block delay: 21
+    Fuzz.handler_giveReview() Time delay: 33271 seconds Block delay: 35119
+    Fuzz.handler_addTeacher() Time delay: 195123 seconds Block delay: 4462
+    Fuzz.handler_startSession() Time delay: 322247 seconds Block delay: 1014
+    Fuzz.handler_startSession() Time delay: 282169 seconds Block delay: 4223
+    Fuzz.handler_giveReview() Time delay: 460574 seconds Block delay: 20243
+    Fuzz.handler_startSession() Time delay: 400314 seconds Block delay: 51722
+    Fuzz.handler_giveReview() Time delay: 305998 seconds Block delay: 31
+    Fuzz.handler_startSession() Time delay: 322357 seconds Block delay: 4865
+    Fuzz.handler_enroll() Time delay: 65 seconds Block delay: 34
+    Fuzz.handler_addTeacher() Time delay: 271957 seconds Block delay: 45819
+    Fuzz.handler_giveReview() Time delay: 322357 seconds Block delay: 4954
+    Fuzz.handler_startSession() Time delay: 322336 seconds Block delay: 31
+    Fuzz.handler_addTeacher() Time delay: 322274 seconds Block delay: 6721
+    Fuzz.handler_giveReview() Time delay: 322356 seconds Block delay: 32661
+    Fuzz.handler_startSession() Time delay: 89 seconds Block delay: 71
+    Fuzz.handler_enroll() Time delay: 405856 seconds Block delay: 3
+    Fuzz.handler_giveReview() Time delay: 604797 seconds Block delay: 47
+    Fuzz.handler_enroll() Time delay: 224317 seconds Block delay: 1570
+    Fuzz.handler_enroll() Time delay: 31594 seconds Block delay: 4925
+    Fuzz.handler_addTeacher() Time delay: 322361 seconds Block delay: 30011
+    Fuzz.handler_giveReview() Time delay: 209930 seconds Block delay: 30041
+    Fuzz.handler_startSession() Time delay: 437838 seconds Block delay: 5007
+    Fuzz.handler_giveReview() Time delay: 439556 seconds Block delay: 60364
+
+Traces: 
+call ERC1967Proxy::[unknown method](0x82f7d3920000000000000000000000000000000000000000000000000000000000040001) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:55)
+ ├╴delegatecall 0x7C276DcAab99BD16163c1bcce671CaD6A1ec0945::isStudent(0x0000000000000000000000000000000000040001) (/Users/kim/dev/2025-05-hawk-high/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:40)
+ │  └╴← (true)
+ └╴← (true)
+call Fuzzlib::log(string,bool)(«STUDENT_1 is student?», true) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:55)
+ ├╴emit LogBool(message=«STUDENT_1 is student?», data=true) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call ERC1967Proxy::[unknown method](0xaec37eb30000000000000000000000000000000000000000000000000000000000020001) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:56)
+ ├╴delegatecall 0x7C276DcAab99BD16163c1bcce671CaD6A1ec0945::isTeacher(0x0000000000000000000000000000000000020001) (/Users/kim/dev/2025-05-hawk-high/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:40)
+ │  └╴← (true)
+ └╴← (true)
+call Fuzzlib::log(string,bool)(«TEACHER_1 is teacher?», true) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:56)
+ ├╴emit LogBool(message=«TEACHER_1 is teacher?», data=true) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::log(string,uint256)(«current timestamp», 1535348218) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:59)
+ ├╴emit LogUint(message=«current timestamp», data=1535348218) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call ERC1967Proxy::[unknown method](0x710cb3fd) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:60)
+ ├╴delegatecall 0x7C276DcAab99BD16163c1bcce671CaD6A1ec0945::reviewTime() (/Users/kim/dev/2025-05-hawk-high/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:40)
+ │  └╴← (604800)
+ └╴← (604800)
+call Fuzzlib::log(string,uint256)(«reviewTime», 604800) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:60)
+ ├╴emit LogUint(message=«reviewTime», data=604800) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call HEVM::prank(0x0000000000000000000000000000000000020001) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:62)
+ └╴← 0x
+call ERC1967Proxy::[unknown method](0x148fdfbf00000000000000000000000000000000000000000000000000000000000400010000000000000000000000000000000000000000000000000000000000000000) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:63)
+ ├╴delegatecall 0x7C276DcAab99BD16163c1bcce671CaD6A1ec0945::giveReview(0x0000000000000000000000000000000000040001, false) (/Users/kim/dev/2025-05-hawk-high/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:40)
+ │  └╴error Revert Panic(0x4e487b710000000000000000000000000000000000000000000000000000000000000011) <no source map>
+ └╴error Revert Panic(0x4e487b710000000000000000000000000000000000000000000000000000000000000011) (/Users/kim/dev/2025-05-hawk-high/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol:50)
+call Fuzzlib::log(string,bool)(«giveReview()==== success», false) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/HandlerLevelOne.sol:65)
+ ├╴emit LogBool(message=«giveReview()==== success», data=false) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::log(string,bytes32)(«not teacher selector %%%%%%%::», 0xc3661e2600000000000000000000000000000000000000000000000000000000) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/PostCondition.sol:79)
+ ├╴emit LogBytes32(message=«not teacher selector %%%%%%%::», data=0xc3661e2600000000000000000000000000000000000000000000000000000000) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::log(string,uint256)(«failedData.length %%%%%%%::», 36) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/helper/utils.sol:34)
+ ├╴emit LogUint(message=«failedData.length %%%%%%%::», data=36) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::log(string,bytes)(«failedData info %%%%%%%::», 0x4e487b710000000000000000000000000000000000000000000000000000000000000011) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/helper/utils.sol:35)
+ ├╴emit LogBytes(message=«failedData info %%%%%%%::», data=0x4e487b710000000000000000000000000000000000000000000000000000000000000011) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::log(string,string)(«failedData hex %%%%%%%::», «0x4e487b710000000000000000000000000000000000000000000000000000000000000011») (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/helper/utils.sol:36)
+ ├╴emit LogString(message=«failedData hex %%%%%%%::», data=«0x4e487b710000000000000000000000000000000000000000000000000000000000000011») (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/libraries/LibLog.sol:84)
+ └╴← 0x
+call Fuzzlib::t(bool,string)(false, 0xa15f9f0700000000000000000000000000) (/Users/kim/dev/2025-05-hawk-high/test/fuzzing/helper/utils.sol:75)
+ ├╴emit AssertFail(0xa15f9f0700000000000000000000000000) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/helpers/HelperAssert.sol:20)
+ ├╴call PlatformCrytic::assertFail()() (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/helpers/HelperAssert.sol:21)
+ │  └╴error Revert Panic(0x4e487b710000000000000000000000000000000000000000000000000000000000000001) <source not found>
+ └╴error Revert Panic(0x4e487b710000000000000000000000000000000000000000000000000000000000000001) (/Users/kim/dev/2025-05-hawk-high/node_modules/@perimetersec/fuzzlib/src/helpers/HelperAssert.sol:21)
