@@ -97,6 +97,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
   function extractSelector(bytes memory errorData) internal pure returns (bytes4) {
     bytes4 selector;
     assembly {
+      // errorData location has length. That's way adding 32 to get actual errorData
       selector := mload(add(errorData, 32))
     }
     return selector;
@@ -114,12 +115,15 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     bytes memory errorData,
     bytes[] memory allowedRequireErrorMessages
   ) internal {
+    // remove the first 4 bytes which is the selector of the error
     bytes memory strippedData = new bytes(errorData.length - 4);
+    
     for (uint i = 0; i < errorData.length - 4; i++) {
       strippedData[i] = errorData[i + 4];
     }
 
     bool allowed = false;
+
     for (uint256 i = 0; i < allowedRequireErrorMessages.length; i++) {
       if (keccak256(strippedData) == keccak256(allowedRequireErrorMessages[i])) {
         allowed = true;
@@ -146,7 +150,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     
     string memory errorMsg;
     assembly {
-      errorMsg := add(strippedData, 0x20)
+      errorMsg := add(strippedData, 32)
     }
     return errorMsg;
   }
