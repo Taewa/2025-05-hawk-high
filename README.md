@@ -1,3 +1,8 @@
+# [Echidna] Fuzzing test project
+```
+npm run fuzz
+```
+
 ## Hawk High
 
 [//]: # (contest-details-open)
