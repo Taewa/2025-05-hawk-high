@@ -22,66 +22,132 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     return uint256(keccak256(abi.encodePacked(block.timestamp))) % 2 == 0;
   }
 
-  // TODO: update fn name
-  // TODO: (failedData.length == 4) is not always true for Panic(string). Need to find a way to handle it. Panic(string) vs Error(string)
-  function allowRequire(  
-    bytes memory failedData,
-    bytes[] memory allowedErrorMessages,
-    bytes4[] memory allowedErrors,
+  function allowErrors(  
+    bytes memory errorData,
+    bytes[] memory allowedRequireErrorMessages
+  ) internal {
+    allowErrors(errorData, allowedRequireErrorMessages, new bytes4[](0), "", false);
+  }
+
+  function allowErrors(  
+    bytes memory errorData,
+    bytes4[] memory allowedCustomErrors,
     string memory errorContext
   ) internal {
-    bytes memory strippedData;
-    bool allowed = false;
+    allowErrors(errorData, new bytes[](0), allowedCustomErrors, errorContext, false);
+  }
 
-    // 4 bytes are removed from the beginning of the data (4 bytes are the selector of the function. in this case, it's Error(string))
-    if (failedData.length > 4) {
-      strippedData = new bytes(failedData.length - 4);
-      for (uint i = 0; i < failedData.length - 4; i++) {
-        strippedData[i] = failedData[i + 4];
-      }
-    } else if (failedData.length == 4) {
-      // If we have allowedErrors, check for custom errors
-      if (allowedErrors.length > 0) {
-        fl.errAllow(bytes4(failedData), allowedErrors, errorContext);
-        return;
-      }
-      strippedData = "";
-    } else {
-      strippedData = failedData;
+  function allowErrors(  
+    bytes memory errorData,
+    bytes[] memory allowedRequireErrorMessages,
+    bytes4[] memory allowedCustomErrors,
+    string memory errorContext
+  ) internal {
+    allowErrors(errorData, allowedRequireErrorMessages, allowedCustomErrors, errorContext, false);
+  }
+
+  function allowErrors(  
+    bytes memory errorData,
+    bytes4[] memory allowedCustomErrors,
+    string memory errorContext,
+    bool allowEmptyRequireError
+  ) internal {
+    allowErrors(errorData, new bytes[](0), allowedCustomErrors, errorContext, allowEmptyRequireError);
+  }
+
+  /**
+   * Allow require failure & custom errors
+   * @param errorData: return data from a function call. In this case, it's a failure data
+   * @param allowedRequireErrorMessages: allowed require failure messages. It's a string array
+   * @param allowedCustomErrors: allowed custom errors. It can be just 4 bytes function selector or it could be longer
+   * @param errorContext: error context: A message to describe the error
+   * @param allowEmptyRequireError: allow require failure without message
+   */
+  function allowErrors(  
+    bytes memory errorData,
+    bytes[] memory allowedRequireErrorMessages,
+    bytes4[] memory allowedCustomErrors,
+    string memory errorContext,
+    bool allowEmptyRequireError
+  ) internal {
+    if (errorData.length == 0) {  // ex: require(false); <= when there is no error message, errorData is empty
+      // 1. empty error case (ex: require(false))
+      handleEmptyError(allowEmptyRequireError);
+      return;
     }
 
-    for (uint256 i = 0; i < allowedErrorMessages.length; i++) {
-      if (keccak256(strippedData) == keccak256(allowedErrorMessages[i])) {
+    if (errorData.length < 4) {
+      fl.t(false, "unexpected error data length");
+      return;
+    }
+
+    bytes4 selector = extractSelector(errorData);
+    
+    if (isErrorString(selector)) {
+      // 2. require failure case (ex: require(false, "error message"))
+      handleRequireFailure(errorData, allowedRequireErrorMessages);
+    } else if (allowedCustomErrors.length > 0) {
+      // 3. custom error case (ex: MyCustomError())
+      handleCustomError(selector, allowedCustomErrors, errorContext);
+    } else {
+      fl.t(false, "unexpected error type");
+    }
+  }
+
+  function extractSelector(bytes memory errorData) internal pure returns (bytes4) {
+    bytes4 selector;
+    assembly {
+      selector := mload(add(errorData, 32))
+    }
+    return selector;
+  }
+
+  function isErrorString(bytes4 selector) internal pure returns (bool) {
+    return selector == 0x08c379a0;  // 0x08c379a0 is the selector for "Error(string)" which is the error type for require(...) failure
+  }
+
+  function handleEmptyError(bool allowEmptyRequireError) internal {
+    fl.t(allowEmptyRequireError, "require failure without message");
+  }
+
+  function handleRequireFailure(
+    bytes memory errorData,
+    bytes[] memory allowedRequireErrorMessages
+  ) internal {
+    bytes memory strippedData = new bytes(errorData.length - 4);
+    for (uint i = 0; i < errorData.length - 4; i++) {
+      strippedData[i] = errorData[i + 4];
+    }
+
+    bool allowed = false;
+    for (uint256 i = 0; i < allowedRequireErrorMessages.length; i++) {
+      if (keccak256(strippedData) == keccak256(allowedRequireErrorMessages[i])) {
         allowed = true;
         break;
       }
     }
 
-    // string conversion attempt, if failed, replace with "unknown error"
-    string memory errorMsg;
-    if (strippedData.length == 0) {
-      errorMsg = "unknown error";
-    } else {
-      // try-catch is only available for external calls, so defensively handle it
-      // when converting bytes to string, invalid UTF-8 may cause panic
-      // so convert it safely using assembly
-      assembly {
-        errorMsg := add(strippedData, 0x20)
-      }
-    }
-
+    string memory errorMsg = convertToErrorMessage(strippedData);
     fl.t(allowed, errorMsg);
   }
 
-  function toHexString(bytes memory data) internal pure returns (string memory) {
-    bytes memory alphabet = "0123456789abcdef";
-    bytes memory str = new bytes(2 + data.length * 2);
-    str[0] = "0";
-    str[1] = "x";
-    for (uint256 i = 0; i < data.length; i++) {
-        str[2 + i * 2] = alphabet[uint8(data[i] >> 4)];
-        str[3 + i * 2] = alphabet[uint8(data[i] & 0x0f)];
+  function handleCustomError(
+    bytes4 selector,
+    bytes4[] memory allowedCustomErrors,
+    string memory errorContext
+  ) internal {
+    fl.errAllow(selector, allowedCustomErrors, errorContext);
+  }
+
+  function convertToErrorMessage(bytes memory strippedData) internal pure returns (string memory) {
+    if (strippedData.length == 0) {
+      return "unknown error";
     }
-    return string(str);
+    
+    string memory errorMsg;
+    assembly {
+      errorMsg := add(strippedData, 0x20)
+    }
+    return errorMsg;
   }
 }

@@ -76,7 +76,6 @@ contract PostCondition is Properties {
         getLevelOneProxy().bursary()
       );
     } else {
-      // TODO: CustomError <- need to detect -> impl logic
       bytes[] memory allowedRequireErrors = new bytes[](1);
       allowedRequireErrors[0] = abi.encode("Reviews can only be given once per week");
 
@@ -84,7 +83,7 @@ contract PostCondition is Properties {
       allowedErrors[0] = LevelOne.HH__NotTeacher.selector;
       allowedErrors[1] = LevelOne.HH__StudentDoesNotExist.selector;
 
-      allowRequire(returnData, allowedRequireErrors, allowedErrors, "giveReview() error");
+      allowErrors(returnData, allowedRequireErrors, allowedErrors, "giveReview() error", true);
     }
   }
 }
