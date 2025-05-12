@@ -24,7 +24,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
 
   function allowErrors(  
     bytes memory errorData,
-    bytes[] memory allowedRequireErrorMessages
+    string[] memory allowedRequireErrorMessages
   ) internal {
     allowErrors(errorData, allowedRequireErrorMessages, new bytes4[](0), "", false);
   }
@@ -34,12 +34,12 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     bytes4[] memory allowedCustomErrors,
     string memory errorContext
   ) internal {
-    allowErrors(errorData, new bytes[](0), allowedCustomErrors, errorContext, false);
+    allowErrors(errorData, new string[](0), allowedCustomErrors, errorContext, false);
   }
 
   function allowErrors(  
     bytes memory errorData,
-    bytes[] memory allowedRequireErrorMessages,
+    string[] memory allowedRequireErrorMessages,
     bytes4[] memory allowedCustomErrors,
     string memory errorContext
   ) internal {
@@ -52,7 +52,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     string memory errorContext,
     bool allowEmptyRequireError
   ) internal {
-    allowErrors(errorData, new bytes[](0), allowedCustomErrors, errorContext, allowEmptyRequireError);
+    allowErrors(errorData, new string[](0), allowedCustomErrors, errorContext, allowEmptyRequireError);
   }
 
   /**
@@ -65,7 +65,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
    */
   function allowErrors(  
     bytes memory errorData,
-    bytes[] memory allowedRequireErrorMessages,
+    string[] memory allowedRequireErrorMessages,
     bytes4[] memory allowedCustomErrors,
     string memory errorContext,
     bool allowEmptyRequireError
@@ -113,7 +113,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
 
   function handleRequireFailure(
     bytes memory errorData,
-    bytes[] memory allowedRequireErrorMessages
+    string[] memory allowedRequireErrorMessages
   ) internal {
     // remove the first 4 bytes which is the selector of the error
     bytes memory strippedData = new bytes(errorData.length - 4);
@@ -125,7 +125,7 @@ abstract contract Utils is FuzzStorageVariables, FuzzBase {
     bool allowed = false;
 
     for (uint256 i = 0; i < allowedRequireErrorMessages.length; i++) {
-      if (keccak256(strippedData) == keccak256(allowedRequireErrorMessages[i])) {
+      if (keccak256(strippedData) == keccak256(abi.encode(allowedRequireErrorMessages[i]))) {
         allowed = true;
         break;
       }

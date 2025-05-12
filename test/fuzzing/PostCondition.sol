@@ -60,8 +60,8 @@ contract PostCondition is Properties {
       invariant_BAL_03();
       invariant_BAL_04();
     } else {
-      bytes[] memory allowedRequireErrors = new bytes[](1);
-      allowedRequireErrors[0] = abi.encode("Reviews can only be given once per week");
+      string[] memory allowedRequireErrors = new string[](1);
+      allowedRequireErrors[0] = "Reviews can only be given once per week";
 
       bytes4[] memory allowedErrors = new bytes4[](2);
       allowedErrors[0] = LevelOne.HH__NotTeacher.selector;
