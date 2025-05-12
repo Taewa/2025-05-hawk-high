@@ -25,16 +25,8 @@ contract PostCondition is Properties {
 
   function enrollPostCondition(bool success, bytes memory returnData) internal {
     if (success) {
-      invariant_BAL_03(
-        usdc.balanceOf(address(levelOneProxy)), 
-        getLevelOneProxy().getListOfStudents(), 
-        getLevelOneProxy().getSchoolFeesCost()
-      );
-
-      invariant_BAL_04(
-        usdc.balanceOf(address(levelOneProxy)), 
-        getLevelOneProxy().bursary()
-      );
+      invariant_BAL_03();
+      invariant_BAL_04();
     } else {
       bytes4[] memory allowedErrors = new bytes4[](4);
       allowedErrors[0] = LevelOne.HH__NotAllowed.selector;
@@ -65,16 +57,8 @@ contract PostCondition is Properties {
 
   function giveReviewPostCondition(bool success, bytes memory returnData) internal {
     if (success) {
-      invariant_BAL_03(
-        usdc.balanceOf(address(levelOneProxy)), 
-        getLevelOneProxy().getListOfStudents(), 
-        getLevelOneProxy().getSchoolFeesCost()
-      );
-
-      invariant_BAL_04(
-        usdc.balanceOf(address(levelOneProxy)), 
-        getLevelOneProxy().bursary()
-      );
+      invariant_BAL_03();
+      invariant_BAL_04();
     } else {
       bytes[] memory allowedRequireErrors = new bytes[](1);
       allowedRequireErrors[0] = abi.encode("Reviews can only be given once per week");

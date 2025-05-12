@@ -30,8 +30,12 @@ contract HandlerLevelOne is PostCondition {
     vm.prank(actor);
     usdc.approve(address(levelOneProxy), SCHOOL_FEES);  // TODO: this could be randomised to test error cases
 
+    _before();
+
     vm.prank(actor);
     (bool success, bytes memory returnData) = address(levelOneProxy).call{gas: 1000000}(enrollCalldata);
+
+    _after();
 
     enrollPostCondition(success, returnData);
   }
@@ -51,8 +55,12 @@ contract HandlerLevelOne is PostCondition {
     bool review = getRandomReview();
     bytes memory giveReviewCalldata = abi.encodeWithSelector(LevelOne.giveReview.selector, STUDENT_1, review);
 
+    _before();
+
     vm.prank(TEACHER_1);
     (bool success, bytes memory returnData) = address(levelOneProxy).call{gas: 1000000}(giveReviewCalldata);
+
+    _after();
 
     giveReviewPostCondition(success, returnData);
   } 

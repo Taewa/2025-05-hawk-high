@@ -11,9 +11,11 @@ abstract contract Properties_BAL is PropertiesBase {
   }
 
   // BAL-03: the USDC balance of the contract must be equal to the USDC amount of students enrolled
-  // TODO: schoolFees, contractBalance should come from beforeAfter because ...(trust issues)
-  function invariant_BAL_03(uint256 contractBalance, address[] memory studentsEnrolled, uint256 schoolFees) internal {
+  function invariant_BAL_03() internal {
     uint256 studentsEnrolledBalance = 0;
+    address[] memory studentsEnrolled = states[1].listOfStudents;
+    uint256 schoolFees = states[1].schoolFees;
+    uint256 contractBalance = states[1].usdcBalance;
 
     for (uint256 i = 0; i < studentsEnrolled.length; i++) {
       studentsEnrolledBalance += schoolFees;
@@ -23,7 +25,10 @@ abstract contract Properties_BAL is PropertiesBase {
   }
 
   // BAL-04: the USDC balance of the contract must be equal to bursary amount
-  function invariant_BAL_04(uint256 contractBalance, uint256 bursaryAmount) internal {
+  function invariant_BAL_04() internal {
+    uint256 contractBalance = states[1].usdcBalance;
+    uint256 bursaryAmount = states[1].bursary;
+
     fl.eq(contractBalance, bursaryAmount, BAL_04);
   }
 
